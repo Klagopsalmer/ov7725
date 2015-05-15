@@ -553,8 +553,8 @@ static inline int ov772x_write(struct i2c_client *client, u8 addr, u8 value)
 static int ov772x_mask_set(struct i2c_client *client, u8  command, u8  mask,
 			   u8  set)
 {
-	s32 val = ov772x_read(client, command);
-	if (val < 0)
+	s32 val = 0;
+	if (ov772x_read_reg(client, command,&val) < 0)
 		return val;
 
 	val &= ~mask;
@@ -632,7 +632,7 @@ static int ov772x_s_ctrl(struct v4l2_ctrl *ctrl)
 			val ^= VFLIP_IMG;
 		}
 		pr_info("ov772x_mask_set\n");
-		return ov772x_mask_set(client, COM3, VFLIP_IMG, val);
+		ov772x_mask_set(client, COM3, VFLIP_IMG, val);
 	case V4L2_CID_HFLIP:
 		pr_info("V4L2_CID_HFLIP\n");
 		val = ctrl->val ? HFLIP_IMG : 0x00;
@@ -1041,6 +1041,11 @@ static int ov772x_video_probe(struct ov772x_priv *priv)
 	//priv->info->flags=OV772X_FLAG_VFLIP | OV772X_FLAG_HFLIP;
 	ret = v4l2_ctrl_handler_setup(&priv->hdl);
 
+	if(ret<0)
+	{
+		pr_info("v4l2_ctrl_handler_setup error\n");
+	}
+
 done:
 	pr_info("ov772x_s_power\n");
 	ov772x_s_power(&priv->subdev, 0);
@@ -1139,7 +1144,20 @@ static int ov772x_probe(struct i2c_client *client,
 	if (!priv)
 		return -ENOMEM;
 
-	priv->info = ssdd->drv_priv;
+	if(!ssdd->drv_priv)
+	{
+		//TODO fill up ov772x_camera_info from device tree
+		pr_info("drv null\n");
+		priv->info = devm_kzalloc(&client->dev, sizeof(struct ov772x_camera_info), GFP_KERNEL);
+			if (!priv)
+				return -ENOMEM;
+	}
+	else
+	{
+		pr_info("drv not null\n");
+		priv->info = ssdd->drv_priv;
+	}
+
 
 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov772x_subdev_ops);
 	v4l2_ctrl_handler_init(&priv->hdl, 3);
@@ -1151,16 +1169,21 @@ static int ov772x_probe(struct i2c_client *client,
 			V4L2_CID_BAND_STOP_FILTER, 0, 256, 1, 0);
 	priv->subdev.ctrl_handler = &priv->hdl;
 	if (priv->hdl.error)
+	{
+		pr_err("priv->hdl.error error\n");
 		return priv->hdl.error;
+	}
 
 	priv->clk = v4l2_clk_get(&client->dev, "mclk");
 	if (IS_ERR(priv->clk)) {
+		pr_err("v4l2_clk_get error\n");
 		ret = PTR_ERR(priv->clk);
 		goto eclkget;
 	}
 
 	ret = ov772x_video_probe(priv);
 	if (ret < 0) {
+		pr_err("ov772x_video_probe error\n");
 		v4l2_clk_put(priv->clk);
 eclkget:
 		v4l2_ctrl_handler_free(&priv->hdl);
