@@ -529,43 +529,69 @@ ov772x_read_reg(struct i2c_client *client, u8 reg, u8 *val)
 		return -ENODEV;
 
 	msg->addr = client->addr;
-	msg->flags = 0;
+	msg->flags = I2C_M_IGNORE_NAK;
 	msg->len = 1;
 	msg->buf = data;
 	*data = reg;
 	err = i2c_transfer(client->adapter, msg, 1);
 	if (err >= 0) {
-		msg->flags = I2C_M_RD;
+		msg->flags = I2C_M_RD+I2C_M_NO_RD_ACK;
 		err = i2c_transfer(client->adapter, msg, 1);
 	}
 	if (err >= 0) {
 		*val = *data;
 		return 0;
 	}
-	return err;
+	return 0;
 }
 
 static inline int ov772x_write(struct i2c_client *client, u8 addr, u8 value)
 {
-	return i2c_smbus_write_byte_data(client, addr, value);
+
+	//return i2c_smbus_write_byte_data(client, addr, value);
+
+	int err;
+	struct i2c_msg msg[1];
+	unsigned char data[2];
+
+	pr_info("ov772x_write\n");
+
+	if (!client->adapter)
+		return -ENODEV;
+
+	msg->addr = client->addr;
+	msg->flags = I2C_M_IGNORE_NAK;
+	msg->len = 2;
+	msg->buf = data;
+	data[0] = addr;
+	data[1]=value;
+	err = i2c_transfer(client->adapter, msg, 1);
+	if (err >= 0) {
+		return 0;
+	}
+	return 0;
 }
 
 static int ov772x_mask_set(struct i2c_client *client, u8  command, u8  mask,
 			   u8  set)
 {
 	s32 val = 0;
+
+	pr_info("ov772x_mask_set\n");
+
 	if (ov772x_read_reg(client, command,&val) < 0)
 		return val;
 
 	val &= ~mask;
 	val |= set & mask;
-	pr_info("ov772x_write\n");
 	return ov772x_write(client, command, val);
 }
 
 static int ov772x_reset(struct i2c_client *client)
 {
 	int ret;
+
+	pr_info("ov772x_reset\n");
 
 	ret = ov772x_write(client, COM7, SCCB_RESET);
 	if (ret < 0)
@@ -753,6 +779,8 @@ static int ov772x_set_params(struct ov772x_priv *priv,
 	int ret;
 	u8  val;
 
+	pr_info("ov772x_set_params\n");
+
 	/*
 	 * reset hardware
 	 */
@@ -762,6 +790,8 @@ static int ov772x_set_params(struct ov772x_priv *priv,
 	 * Edge Ctrl
 	 */
 	if (priv->info->edgectrl.strength & OV772X_MANUAL_EDGE_CTRL) {
+
+		pr_info("1\n");
 
 		/*
 		 * Manual Edge Control Mode
@@ -787,6 +817,8 @@ static int ov772x_set_params(struct ov772x_priv *priv,
 			goto ov772x_set_fmt_error;
 
 	} else if (priv->info->edgectrl.upper > priv->info->edgectrl.lower) {
+
+		pr_info("2\n");
 		/*
 		 * Auto Edge Control Mode
 		 *
@@ -893,6 +925,7 @@ static int ov772x_set_params(struct ov772x_priv *priv,
 	return ret;
 
 ov772x_set_fmt_error:
+	pr_err("ov772x_set_params failed\n");
 
 	ov772x_reset(client);
 
@@ -949,7 +982,10 @@ static int ov772x_s_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
 
 	ret = ov772x_set_params(priv, cfmt, win);
 	if (ret < 0)
+	{
+
 		return ret;
+	}
 
 	priv->win = win;
 	priv->cfmt = cfmt;
