@@ -17,7 +17,7 @@ __attribute__((section(".gnu.linkonce.this_module"))) = {
 static const char __module_depends[]
 __used
 __attribute__((section(".modinfo"))) =
-"depends=soc_camera";
+"depends=";
 
 MODULE_ALIAS("i2c:ov772x");
 MODULE_ALIAS("of:N*T*Covti,ov772x*");

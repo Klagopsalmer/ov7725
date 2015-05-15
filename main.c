@@ -1158,6 +1158,12 @@ static int ov772x_probe(struct i2c_client *client,
 		priv->info = ssdd->drv_priv;
 	}
 
+	priv->clk = v4l2_clk_get(&client->dev, "mclk");
+	if (IS_ERR(priv->clk)) {
+		pr_err("v4l2_clk_get error\n");
+		return -EPROBE_DEFER;
+	}
+
 
 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov772x_subdev_ops);
 	v4l2_ctrl_handler_init(&priv->hdl, 3);
@@ -1171,26 +1177,35 @@ static int ov772x_probe(struct i2c_client *client,
 	if (priv->hdl.error)
 	{
 		pr_err("priv->hdl.error error\n");
-		return priv->hdl.error;
+		ret= priv->hdl.error;
+		goto out_clkput;
 	}
 
-	priv->clk = v4l2_clk_get(&client->dev, "mclk");
-	if (IS_ERR(priv->clk)) {
-		pr_err("v4l2_clk_get error\n");
-		ret = PTR_ERR(priv->clk);
-		goto eclkget;
-	}
+	ret=soc_camera_power_init(&client->dev,ssdd);
+	if (ret < 0)
+		goto out_hdlfree;
+
 
 	ret = ov772x_video_probe(priv);
 	if (ret < 0) {
 		pr_err("ov772x_video_probe error\n");
-		v4l2_clk_put(priv->clk);
-eclkget:
-		v4l2_ctrl_handler_free(&priv->hdl);
-	} else {
-		priv->cfmt = &ov772x_cfmts[0];
-		priv->win = &ov772x_win_sizes[0];
+		goto out_hdlfree;
 	}
+
+	priv->cfmt = &ov772x_cfmts[0];
+	priv->win = &ov772x_win_sizes[0];
+
+	priv->subdev.dev = &client->dev;
+	ret = v4l2_async_register_subdev(&priv->subdev);
+	if (ret < 0)
+		goto out_hdlfree;
+
+	return 0;
+
+out_hdlfree:
+	v4l2_ctrl_handler_free(&priv->hdl);
+out_clkput:
+	v4l2_clk_put(priv->clk);
 
 	pr_info("end ov772x_probe\n");
 
@@ -1201,6 +1216,7 @@ static int ov772x_remove(struct i2c_client *client)
 {
 	struct ov772x_priv *priv = to_ov772x(i2c_get_clientdata(client));
 
+	v4l2_async_unregister_subdev(&priv->subdev);
 	v4l2_clk_put(priv->clk);
 	v4l2_device_unregister_subdev(&priv->subdev);
 	v4l2_ctrl_handler_free(&priv->hdl);
