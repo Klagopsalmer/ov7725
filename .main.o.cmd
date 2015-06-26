@@ -353,6 +353,7 @@ deps_/home/schnegg/workspace/ov7725/main.o := \
     $(wildcard include/config/use/percpu/numa/node/id.h) \
     $(wildcard include/config/sched/smt.h) \
   include/linux/smp.h \
+    $(wildcard include/config/up/late/init.h) \
   include/linux/llist.h \
     $(wildcard include/config/arch/have/nmi/safe/cmpxchg.h) \
   include/linux/percpu.h \
@@ -470,6 +471,7 @@ deps_/home/schnegg/workspace/ov7725/main.o := \
     $(wildcard include/config/futex.h) \
     $(wildcard include/config/fault/injection.h) \
     $(wildcard include/config/latencytop.h) \
+    $(wildcard include/config/kasan.h) \
     $(wildcard include/config/function/graph/tracer.h) \
     $(wildcard include/config/uprobes.h) \
     $(wildcard include/config/bcache.h) \
@@ -584,6 +586,8 @@ deps_/home/schnegg/workspace/ov7725/main.o := \
     $(wildcard include/config/slob.h) \
   include/linux/kmemleak.h \
     $(wildcard include/config/debug/kmemleak.h) \
+  include/linux/kasan.h \
+    $(wildcard include/config/kasan/shadow/offset.h) \
   include/linux/delay.h \
   arch/arm/include/asm/delay.h \
   include/uapi/linux/v4l2-mediabus.h \
@@ -606,7 +610,7 @@ deps_/home/schnegg/workspace/ov7725/main.o := \
     $(wildcard include/config/fsnotify.h) \
     $(wildcard include/config/file/locking.h) \
     $(wildcard include/config/quota.h) \
-    $(wildcard include/config/fs/xip.h) \
+    $(wildcard include/config/fs/dax.h) \
     $(wildcard include/config/migration.h) \
   include/linux/kdev_t.h \
   include/uapi/linux/kdev_t.h \
@@ -618,10 +622,10 @@ deps_/home/schnegg/workspace/ov7725/main.o := \
     $(wildcard include/config/arch/use/cmpxchg/lockref.h) \
   include/linux/path.h \
   include/linux/list_lru.h \
+  include/linux/shrinker.h \
   include/linux/radix-tree.h \
   include/linux/semaphore.h \
   include/uapi/linux/fiemap.h \
-  include/linux/shrinker.h \
   include/linux/migrate_mode.h \
   include/linux/percpu-rwsem.h \
   include/linux/blk_types.h \

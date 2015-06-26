@@ -3,7 +3,8 @@ obj-m += ov7725.o
 ov7725-objs:= main.o
 else
 #KDIR := ~/armadeus/buildroot/output/build/linux-2.6.29.6/
-KDIR := /home/schnegg/armadeus/buildroot/output/build/linux-3.19.2/
+#KDIR := /home/schnegg/armadeus/buildroot/output/build/linux-3.19.2/
+KDIR := ~/armadeus/buildroot/output/build/linux-4.0-rc1/
 CPU := arm
 TOOLS := /home/schnegg/armadeus/buildroot/output/host/usr/bin/arm-linux-
 PWD := $(shell pwd)

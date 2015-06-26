@@ -412,7 +412,7 @@ static const struct ov772x_color_format ov772x_cfmts[] = {
 		.colorspace	= V4L2_COLORSPACE_JPEG,
 		.dsp3		= 0x0,
 		.dsp4		= DSP_OFMT_YUV,
-		.com3		= SWAP_YUV,
+		.com3		= 0x0,
 		.com7		= OFMT_YUV,
 	},
 	{
@@ -452,7 +452,7 @@ static const struct ov772x_color_format ov772x_cfmts[] = {
 		.colorspace	= V4L2_COLORSPACE_SRGB,
 		.dsp3		= 0x0,
 		.dsp4		= DSP_OFMT_YUV,
-		.com3		= SWAP_RGB,
+		.com3		= 0x0,
 		.com7		= FMT_RGB565 | OFMT_RGB,
 	},
 	{
@@ -460,7 +460,7 @@ static const struct ov772x_color_format ov772x_cfmts[] = {
 		.colorspace	= V4L2_COLORSPACE_SRGB,
 		.dsp3		= 0x0,
 		.dsp4		= DSP_OFMT_YUV,
-		.com3		= 0x0,
+		.com3		= SWAP_RGB,
 		.com7		= FMT_RGB565 | OFMT_RGB,
 	},
 	{
@@ -522,8 +522,11 @@ static int
 ov772x_read_reg(struct i2c_client *client, u8 reg, u8 *val)
 {
 	int err;
+	int count=0;
 	struct i2c_msg msg[1];
 	unsigned char data[1];
+
+
 
 	if (!client->adapter)
 		return -ENODEV;
@@ -533,43 +536,63 @@ ov772x_read_reg(struct i2c_client *client, u8 reg, u8 *val)
 	msg->len = 1;
 	msg->buf = data;
 	*data = reg;
-	err = i2c_transfer(client->adapter, msg, 1);
-	if (err >= 0) {
-		msg->flags = I2C_M_RD+I2C_M_NO_RD_ACK;
+	do
+	{
 		err = i2c_transfer(client->adapter, msg, 1);
-	}
+		pr_info("ov772x_read_reg, write access: %d\n",err);
+		msleep(1);
+		count++;
+	}while(err<0 && count<10);
+	msg->flags = I2C_M_RD+I2C_M_NO_RD_ACK;
+	count=0;
+	do
+	{
+		err = i2c_transfer(client->adapter, msg, 1);
+		msleep(1);
+		count++;
+	}while(err<0 && count<10);
+	pr_info("ov772x_read_reg, read access: %d\n",err);
 	if (err >= 0) {
 		*val = *data;
 		return 0;
 	}
-	return 0;
+
+	return err;
 }
 
 static inline int ov772x_write(struct i2c_client *client, u8 addr, u8 value)
 {
+	int ret=0;
+	int count=0;
+	do
+	{
+		ret= i2c_smbus_write_byte_data(client, addr, value);
+		pr_info("ov772x_write: %d\n",ret);
+		msleep(1);
+		count++;
+	}while(ret!=0 && count<10);
+	return ret;
 
-	//return i2c_smbus_write_byte_data(client, addr, value);
-
-	int err;
-	struct i2c_msg msg[1];
-	unsigned char data[2];
-
-	pr_info("ov772x_write\n");
-
-	if (!client->adapter)
-		return -ENODEV;
-
-	msg->addr = client->addr;
-	msg->flags = I2C_M_IGNORE_NAK;
-	msg->len = 2;
-	msg->buf = data;
-	data[0] = addr;
-	data[1]=value;
-	err = i2c_transfer(client->adapter, msg, 1);
-	if (err >= 0) {
-		return 0;
-	}
-	return 0;
+//	int err;
+//	struct i2c_msg msg[1];
+//	unsigned char data[2];
+//
+//	pr_info("ov772x_write\n");
+//
+//	if (!client->adapter)
+//		return -ENODEV;
+//
+//	msg->addr = client->addr;
+//	msg->flags = I2C_M_IGNORE_NAK;
+//	msg->len = 2;
+//	msg->buf = data;
+//	data[0] = addr;
+//	data[1]=value;
+//	err = i2c_transfer(client->adapter, msg, 1);
+//	if (err >= 0) {
+//		return 0;
+//	}
+//	return 0;
 }
 
 static int ov772x_mask_set(struct i2c_client *client, u8  command, u8  mask,
@@ -838,36 +861,36 @@ static int ov772x_set_params(struct ov772x_priv *priv,
 	}
 
 	/* Format and window size */
-	ret = ov772x_write(client, HSTART, win->rect.left >> 2);
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, HSIZE, win->rect.width >> 2);
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, VSTART, win->rect.top >> 1);
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, VSIZE, win->rect.height >> 1);
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, HOUTSIZE, win->rect.width >> 2);
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, VOUTSIZE, win->rect.height >> 1);
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, HREF,
-			   ((win->rect.top & 1) << HREF_VSTART_SHIFT) |
-			   ((win->rect.left & 3) << HREF_HSTART_SHIFT) |
-			   ((win->rect.height & 1) << HREF_VSIZE_SHIFT) |
-			   ((win->rect.width & 3) << HREF_HSIZE_SHIFT));
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
-	ret = ov772x_write(client, EXHCH,
-			   ((win->rect.height & 1) << EXHCH_VSIZE_SHIFT) |
-			   ((win->rect.width & 3) << EXHCH_HSIZE_SHIFT));
-	if (ret < 0)
-		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, HSTART, win->rect.left >> 2);
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, HSIZE, win->rect.width >> 2);
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, VSTART, win->rect.top >> 1);
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, VSIZE, win->rect.height >> 1);
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, HOUTSIZE, win->rect.width >> 2);
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, VOUTSIZE, win->rect.height >> 1);
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, HREF,
+//			   ((win->rect.top & 1) << HREF_VSTART_SHIFT) |
+//			   ((win->rect.left & 3) << HREF_HSTART_SHIFT) |
+//			   ((win->rect.height & 1) << HREF_VSIZE_SHIFT) |
+//			   ((win->rect.width & 3) << HREF_HSIZE_SHIFT));
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
+//	ret = ov772x_write(client, EXHCH,
+//			   ((win->rect.height & 1) << EXHCH_VSIZE_SHIFT) |
+//			   ((win->rect.width & 3) << EXHCH_HSIZE_SHIFT));
+//	if (ret < 0)
+//		goto ov772x_set_fmt_error;
 
 	/*
 	 * set DSP_CTRL3
