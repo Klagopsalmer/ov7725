@@ -572,27 +572,6 @@ static inline int ov772x_write(struct i2c_client *client, u8 addr, u8 value)
 		count++;
 	}while(ret!=0 && count<10);
 	return ret;
-
-//	int err;
-//	struct i2c_msg msg[1];
-//	unsigned char data[2];
-//
-//	pr_info("ov772x_write\n");
-//
-//	if (!client->adapter)
-//		return -ENODEV;
-//
-//	msg->addr = client->addr;
-//	msg->flags = I2C_M_IGNORE_NAK;
-//	msg->len = 2;
-//	msg->buf = data;
-//	data[0] = addr;
-//	data[1]=value;
-//	err = i2c_transfer(client->adapter, msg, 1);
-//	if (err >= 0) {
-//		return 0;
-//	}
-//	return 0;
 }
 
 static int ov772x_mask_set(struct i2c_client *client, u8  command, u8  mask,
@@ -860,38 +839,6 @@ static int ov772x_set_params(struct ov772x_priv *priv,
 			goto ov772x_set_fmt_error;
 	}
 
-	/* Format and window size */
-//	ret = ov772x_write(client, HSTART, win->rect.left >> 2);
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, HSIZE, win->rect.width >> 2);
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, VSTART, win->rect.top >> 1);
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, VSIZE, win->rect.height >> 1);
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, HOUTSIZE, win->rect.width >> 2);
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, VOUTSIZE, win->rect.height >> 1);
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, HREF,
-//			   ((win->rect.top & 1) << HREF_VSTART_SHIFT) |
-//			   ((win->rect.left & 3) << HREF_HSTART_SHIFT) |
-//			   ((win->rect.height & 1) << HREF_VSIZE_SHIFT) |
-//			   ((win->rect.width & 3) << HREF_HSIZE_SHIFT));
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-//	ret = ov772x_write(client, EXHCH,
-//			   ((win->rect.height & 1) << EXHCH_VSIZE_SHIFT) |
-//			   ((win->rect.width & 3) << EXHCH_HSIZE_SHIFT));
-//	if (ret < 0)
-//		goto ov772x_set_fmt_error;
-
 	/*
 	 * set DSP_CTRL3
 	 */
@@ -1055,8 +1002,6 @@ static int ov772x_video_probe(struct ov772x_priv *priv)
 	/*
 	 * check and show product ID and manufacturer ID
 	 */
-//	pid = ov772x_read(client, PID);
-//	ver = ov772x_read(client, VER);
 	pid=0;
 	ver=0;
 	ov772x_read_reg(client, PID,&pid);
@@ -1076,14 +1021,6 @@ static int ov772x_video_probe(struct ov772x_priv *priv)
 		goto done;
 	}
 
-//	dev_info(&client->dev,
-//		 "%s Product ID %0x:%0x Manufacturer ID %x:%x\n",
-//		 devname,
-//		 pid,
-//		 ver,
-//		 ov772x_read(client, MIDH),
-//		 ov772x_read(client, MIDL));
-
 		midh=0;
 		midl=0;
 		ov772x_read_reg(client, MIDH,&midh);
@@ -1097,7 +1034,7 @@ static int ov772x_video_probe(struct ov772x_priv *priv)
 			 midh,
 			 midl);
 	pr_info("v4l2_ctrl_handler_setup\n");
-	//priv->info->flags=OV772X_FLAG_VFLIP | OV772X_FLAG_HFLIP;
+
 	ret = v4l2_ctrl_handler_setup(&priv->hdl);
 
 	if(ret<0)
