@@ -142,6 +142,7 @@ deps_/home/schnegg/workspace/ov7725/main.o := \
     $(wildcard include/config/kallsyms.h) \
     $(wildcard include/config/tracepoints.h) \
     $(wildcard include/config/event/tracing.h) \
+    $(wildcard include/config/livepatch.h) \
     $(wildcard include/config/module/unload.h) \
     $(wildcard include/config/constructors.h) \
     $(wildcard include/config/debug/set/module/ronx.h) \
